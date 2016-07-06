@@ -1,0 +1,5 @@
+This is a simple example app.
+
+Click the "Choose Date/Time" button to bring up the DateTimePicker dialog.
+
+The date/time you choose will appear above the button.
