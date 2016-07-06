@@ -22,6 +22,7 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.database.CursorJoiner;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -36,6 +37,7 @@ import com.makotogo.mobile.datetimepickerexample.AbstractDialogFragment;
 
 import org.joda.time.LocalDateTime;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -69,6 +71,20 @@ public class DateTimePickerFragment extends AbstractDialogFragment {
     private DatePicker mDatePicker;
     private TimePicker mTimePicker;
 
+    /**
+     * This interface is implemented by the caller, if it wants the result delivered
+     * this way. Otherwise, onActivityResult() will be used.
+     */
+    public interface ResultHandler extends Serializable {
+        void setDate(Date result);
+    }
+
+    /**
+     * The ResultHandler (if used). Basically, this is so we can use this DialogFragment
+     * directly from an Activity (rather than a Fragment).
+     */
+    private ResultHandler mResultHandler;
+
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         // Pull the date out of the Fragment Arguments
@@ -100,13 +116,13 @@ public class DateTimePickerFragment extends AbstractDialogFragment {
         // Now show the Dialog in all its glory!
         return new AlertDialog.Builder(getActivity())
                 .setView(view)
-                .setTitle(R.string.please_choose)
+                .setTitle(R.string.choose_date_or_time)
                 .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         final String METHOD = "onClick(" + dialog + ", " + which + "): ";
-                        if (getTargetFragment() == null) {
-                            Log.e(TAG, "Target Fragment is null!");
+                        if (getTargetFragment() == null && mResultHandler == null) {
+                            Log.e(TAG, "Both Target Fragment and ResultHandler are null!");
                         } else {
                             //noinspection deprecation
                             mDate = computeDateFromComponents(
@@ -115,14 +131,18 @@ public class DateTimePickerFragment extends AbstractDialogFragment {
                                     mDatePicker.getDayOfMonth(),
                                     mTimePicker.getCurrentHour(),
                                     mTimePicker.getCurrentMinute());
-                            Intent intent = new Intent();
-                            intent.putExtra(RESULT_DATE_TIME, mDate);
-                            getTargetFragment().onActivityResult(
-                                    getTargetRequestCode(),
-                                    Activity.RESULT_OK,
-                                    intent);
-                            Log.d(TAG, METHOD + "Sending result back to the caller...:" +
-                                    new LocalDateTime(mDate.getTime()).toString("MM/dd/yyyy hh:mm a"));
+                            if (mResultHandler == null) {
+                                Intent intent = new Intent();
+                                intent.putExtra(RESULT_DATE_TIME, mDate);
+                                getTargetFragment().onActivityResult(
+                                        getTargetRequestCode(),
+                                        Activity.RESULT_OK,
+                                        intent);
+                                Log.d(TAG, METHOD + "Sending result back to the caller...:" +
+                                        new LocalDateTime(mDate.getTime()).toString("MM/dd/yyyy hh:mm a"));
+                            } else {
+                                mResultHandler.setDate(mDate);
+                            }
                         }
                     }
                 })
@@ -201,6 +221,7 @@ public class DateTimePickerFragment extends AbstractDialogFragment {
 
         mDateOrTimeChoice = (String) getArguments().getSerializable(FragmentFactory.FRAG_ARG_DATETIME_PICKER_CHOICE);
 
+        mResultHandler = (ResultHandler)getArguments().getSerializable(FragmentFactory.FRAG_ARG_DATETIME_PICKER_RESULT_HANDLER);
     }
 
     private Date computeDateFromComponents(int year, int monthOfYear, int dayOfMonth, int hourOfDay, int minuteOfHour) {

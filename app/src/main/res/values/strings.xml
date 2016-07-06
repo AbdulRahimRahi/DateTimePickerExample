@@ -28,4 +28,5 @@
     <string name="copyright">Copyright Notice</string>
     <string name="makotogo_example_icon">Makoto Go Example</string>
     <string name="button_choosedatetime">Choose Date/Time</string>
+    <string name="choose_date_or_time">Choose Date or Time:</string>
 </resources>

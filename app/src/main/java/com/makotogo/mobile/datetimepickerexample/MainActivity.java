@@ -17,6 +17,7 @@
 
 package com.makotogo.mobile.datetimepickerexample;
 
+import android.app.FragmentManager;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -29,14 +30,35 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Button;
 import android.widget.TextView;
+
+import org.joda.time.LocalDateTime;
+
+import java.util.Date;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
+    // Request IDs that will be used to identify which dialog is coming back with
+    /// a result for us.
+    private static final int REQUEST_DATE_PICKER = 100;
+
+    // State key
+    private static final String STATE_LOCAL_DATE_TIME = "state.local.date.time";
+    /**
+     *
+     */
+    private LocalDateTime mLocalDateTime = new LocalDateTime();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Bundle exists if we are being recreated
+        if (savedInstanceState != null) {
+            mLocalDateTime = (LocalDateTime)savedInstanceState.getSerializable(STATE_LOCAL_DATE_TIME);
+        }
+
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -45,7 +67,7 @@ public class MainActivity extends AppCompatActivity
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String text = RawTextFileUtils.readRawTextFile(MainActivity.this, R.raw.source_code);
+                String text = RawTextFileUtils.readRawTextFile(MainActivity.this, R.raw.snackbar);
                 Snackbar.make(view, text, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
             }
@@ -71,6 +93,21 @@ public class MainActivity extends AppCompatActivity
 
         // Create the Info text view (footer)
         createTextViewExampleInfoFooter();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        outState.putSerializable(STATE_LOCAL_DATE_TIME, mLocalDateTime);
+    }
+
+    @Override
+    public void onRestoreInstanceState(Bundle savedInstanceState) {
+        mLocalDateTime = (LocalDateTime)savedInstanceState.getSerializable(STATE_LOCAL_DATE_TIME);
     }
 
     @Override
@@ -143,17 +180,44 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void createTextViewDateTime() {
+        TextView textView = (TextView)findViewById(R.id.textview_datetime);
+        textView.setText(formatDateString(mLocalDateTime));
+    }
 
+    private void updateDateTimeTextView() {
+        TextView textView = (TextView) findViewById(R.id.textview_datetime);
+        textView.setText(formatDateString(mLocalDateTime));
     }
 
     private void createButtonChooseDateTime() {
+        Button button = (Button)findViewById(R.id.button_choosedatetime);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                FragmentManager fragmentManager = getFragmentManager();
+                // If there is already a Date displayed, use that.
+                Date dateToUse = (mLocalDateTime == null) ? new LocalDateTime().toDate() : mLocalDateTime.toDate();
+                DateTimePickerFragment datePickerFragment = FragmentFactory.createDatePickerFragment(dateToUse, "The", DateTimePickerFragment.BOTH, new DateTimePickerFragment.ResultHandler() {
 
+                    @Override
+                    public void setDate(Date result) {
+                        mLocalDateTime = new LocalDateTime(result.getTime());
+                        updateDateTimeTextView();
+                    }
+                });
+                datePickerFragment.show(fragmentManager, DateTimePickerFragment.DIALOG_TAG);
+            }
+        });
     }
 
     private void createTextViewExampleInfoFooter() {
         TextView textView = (TextView)findViewById(R.id.textview_example_info_footer);
 
         textView.setText(RawTextFileUtils.readRawTextFile(this, R.raw.info_footer));
+    }
+
+    private String formatDateString(LocalDateTime localDateTime) {
+        return mLocalDateTime.toString("MM/dd/yyyy hh:mm a");
     }
 
 }
