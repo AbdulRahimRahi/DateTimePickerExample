@@ -17,12 +17,12 @@
 
 package com.makotogo.mobile.datetimepickerexample;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.database.CursorJoiner;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -33,8 +33,6 @@ import android.widget.DatePicker;
 import android.widget.Spinner;
 import android.widget.TimePicker;
 
-import com.makotogo.mobile.datetimepickerexample.AbstractDialogFragment;
-
 import org.joda.time.LocalDateTime;
 
 import java.io.Serializable;
@@ -42,9 +40,10 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 /**
- * Created by sperry on 1/20/16.
+ *
  */
 public class DateTimePickerFragment extends AbstractDialogFragment {
 
@@ -95,6 +94,7 @@ public class DateTimePickerFragment extends AbstractDialogFragment {
         int month = calendar.get(Calendar.MONTH);
         int day = calendar.get(Calendar.DAY_OF_MONTH);
 
+        @SuppressLint("InflateParams")
         View view = LayoutInflater.from(getActivity()).inflate(R.layout.fragment_date_time, null);
 
         // Spinner to choose either Date or Time to edit
@@ -161,16 +161,16 @@ public class DateTimePickerFragment extends AbstractDialogFragment {
 
     private void configureDateTimeSpinner(final Spinner dateTimeSpinner) {
         List<String> choices = new ArrayList<>();
-        if (mDateOrTimeChoice == DATE) {
+        if (Objects.equals(DATE, mDateOrTimeChoice)) {
             choices.add(computeChoice(DATE));
-        } else if (mDateOrTimeChoice == TIME) {
+        } else if (Objects.equals(TIME, mDateOrTimeChoice)) {
             choices.add(computeChoice(TIME));
         } else {
             choices.add(computeChoice(TIME));
             choices.add(computeChoice(DATE));
         }
         dateTimeSpinner.setAdapter(
-                new ArrayAdapter<String>(
+                new ArrayAdapter<>(
                         getActivity(),
                         android.R.layout.simple_list_item_1,
                         choices));

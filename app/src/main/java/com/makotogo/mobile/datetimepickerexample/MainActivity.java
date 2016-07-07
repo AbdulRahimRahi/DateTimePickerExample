@@ -21,6 +21,7 @@ import android.app.FragmentManager;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -40,9 +41,7 @@ import java.util.Date;
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
-    // Request IDs that will be used to identify which dialog is coming back with
-    /// a result for us.
-    private static final int REQUEST_DATE_PICKER = 100;
+    private static final String TAG = MainActivity.class.getSimpleName();
 
     // State key
     private static final String STATE_LOCAL_DATE_TIME = "state.local.date.time";
@@ -63,23 +62,26 @@ public class MainActivity extends AppCompatActivity
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        FloatingActionButton fab = (FloatingActionButton) safeFindViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 String text = RawTextFileUtils.readRawTextFile(MainActivity.this, R.raw.snackbar);
+                if (text == null) {
+                    text = "TEXT FROM FILE RESOURCE " + R.raw.snackbar + " NOT FOUND!";
+                }
                 Snackbar.make(view, text, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
             }
         });
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        DrawerLayout drawer = (DrawerLayout) safeFindViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        NavigationView navigationView = (NavigationView) safeFindViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
         // Create the Info text view (header)
@@ -112,7 +114,7 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onBackPressed() {
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        DrawerLayout drawer = (DrawerLayout) safeFindViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
@@ -168,56 +170,66 @@ public class MainActivity extends AppCompatActivity
 
         }
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        DrawerLayout drawer = (DrawerLayout) safeFindViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
     }
 
     private void createTextViewExampleInfoHeader() {
-        TextView textView = (TextView)findViewById(R.id.textview_example_info_header);
+        TextView textView = (TextView)safeFindViewById(R.id.textview_example_info_header);
 
         textView.setText(RawTextFileUtils.readRawTextFile(this, R.raw.info_header));
     }
 
     private void createTextViewDateTime() {
-        TextView textView = (TextView)findViewById(R.id.textview_datetime);
+        TextView textView = (TextView)safeFindViewById(R.id.textview_datetime);
         textView.setText(formatDateString(mLocalDateTime));
     }
 
     private void updateDateTimeTextView() {
-        TextView textView = (TextView) findViewById(R.id.textview_datetime);
+        TextView textView = (TextView) safeFindViewById(R.id.textview_datetime);
         textView.setText(formatDateString(mLocalDateTime));
     }
 
     private void createButtonChooseDateTime() {
-        Button button = (Button)findViewById(R.id.button_choosedatetime);
+        Button button = (Button)safeFindViewById(R.id.button_choosedatetime);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 FragmentManager fragmentManager = getFragmentManager();
                 // If there is already a Date displayed, use that.
                 Date dateToUse = (mLocalDateTime == null) ? new LocalDateTime().toDate() : mLocalDateTime.toDate();
-                DateTimePickerFragment datePickerFragment = FragmentFactory.createDatePickerFragment(dateToUse, "The", DateTimePickerFragment.BOTH, new DateTimePickerFragment.ResultHandler() {
-
-                    @Override
-                    public void setDate(Date result) {
-                        mLocalDateTime = new LocalDateTime(result.getTime());
-                        updateDateTimeTextView();
-                    }
-                });
+                DateTimePickerFragment datePickerFragment =
+                        FragmentFactory.createDatePickerFragment(dateToUse, "The", DateTimePickerFragment.BOTH,
+                                new DateTimePickerFragment.ResultHandler() {
+                                    @Override
+                                    public void setDate(Date result) {
+                                        mLocalDateTime = new LocalDateTime(result.getTime());
+                                        updateDateTimeTextView();
+                                    }
+                                });
                 datePickerFragment.show(fragmentManager, DateTimePickerFragment.DIALOG_TAG);
             }
         });
     }
 
     private void createTextViewExampleInfoFooter() {
-        TextView textView = (TextView)findViewById(R.id.textview_example_info_footer);
+        TextView textView = (TextView)safeFindViewById(R.id.textview_example_info_footer);
 
         textView.setText(RawTextFileUtils.readRawTextFile(this, R.raw.info_footer));
     }
 
     private String formatDateString(LocalDateTime localDateTime) {
-        return mLocalDateTime.toString("MM/dd/yyyy hh:mm a");
+        return localDateTime.toString("MM/dd/yyyy hh:mm a");
+    }
+
+    private View safeFindViewById(int viewId) {
+        final String METHOD = "createButtonChooseDateTime(" + viewId + ")";
+        View ret = findViewById(viewId);
+        if (ret == null) {
+            Log.e(TAG, METHOD + "Something has gone horribly wrong.");
+        }
+        return ret;
     }
 
 }
